@@ -1,7 +1,21 @@
 ---
-title: "PML"
+title: "Practical Machine Learning - Project"
 output: html_document
 ---
+By Jana
+
+# Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+
+The goal of this project is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants (Adelmo, Carlitos, Charles, Eurico, Jeremy and Pedro) and predict the manner in which they did the exercise. Thes particpants were asked to perform barbell lifts correctly and incorrectly in 5 different ways (Stitting, Stitting Down, Standing, Standing Up and Walking) which in given as the "classe" variable in the training set. 
+
+## Data Sourne
+The training data was downloaded from 
+  https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+  
+The test data was downloaded from 
+  https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+  
 Load required libraries and set environment variables
 ```{r, echo=FALSE}
 library(caret)
@@ -75,10 +89,22 @@ oose
 ```
 So, the estimated accuracy of the model is 99.35% and the estimated out-of-sample error is 0.65%.
 
-## Using Using ML algorithms for prediction of Test Data Set (Randon Forest)
+## Using Using ML algorithms for prediction of Test Data Set and creating files
 ```{r}
 result <- predict(modelRf, testCleaned[, -length(names(testCleaned))])
 result
+answers <- result
+
+pml_write_files <- function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i], file=filename, quote=FALSE,row.names=FALSE, col.names=FALSE)
+  }
+}
+pml_write_files(answers)
+
+
 
 ```
 
@@ -86,5 +112,9 @@ result
 ```{r}
 treeModel <- rpart(classe ~ ., data=trainData, method="class")
 prp(treeModel) 
+fancyRpartPlot(treeModel)
+
+
+
 ```
 
