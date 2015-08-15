@@ -1,0 +1,90 @@
+---
+title: "PML"
+output: html_document
+---
+Load required libraries and set environment variables
+```{r, echo=FALSE}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(corrplot)
+library(rattle)
+library(randomForest)
+```
+Read files that are already downloaded to local drive
+```{r}
+trainRaw <- read.csv("pml-training.csv")
+testRaw <- read.csv("pml-testing.csv")
+
+dim(trainRaw)
+dim(testRaw)
+
+```
+## Cleaning data
+
+Step 1 : Removing Missing Values
+
+```{r}
+trainRaw <- trainRaw[, colSums(is.na(trainRaw)) == 0] 
+testRaw <- testRaw[, colSums(is.na(testRaw)) == 0] 
+
+```
+Step 2 : Removing date that will not be used 
+```{r}
+classe <- trainRaw$classe
+trainRemove <- grepl("^X|timestamp|window", names(trainRaw))
+trainRaw <- trainRaw[, !trainRemove]
+trainCleaned <- trainRaw[, sapply(trainRaw, is.numeric)]
+trainCleaned$classe <- classe
+testRemove <- grepl("^X|timestamp|window", names(testRaw))
+testRaw <- testRaw[, !testRemove]
+testCleaned <- testRaw[, sapply(testRaw, is.numeric)]
+```
+
+## Slice the data
+Cleaned training sliced in to 
+  Training data set (70%) and
+  Validation data set (30%).
+Validation data set is to conduct cross validation at a later stage.
+
+```{r}
+set.seed(22519) # For reproducibile purpose
+inTrain <- createDataPartition(trainCleaned$classe, p=0.70, list=F)
+trainData <- trainCleaned[inTrain, ]
+testData <- trainCleaned[-inTrain, ]
+```
+
+## Data Modeling
+
+Random Forest algorithm is used to fit a predictive model for activity recognition   because it automatically selects important variables and is robust to correlated covariates & outliers in general. A 5-fold cross validation when applying the algorithm.
+
+```{r}
+controlRf <- trainControl(method="cv", 5)
+modelRf <- train(classe ~ ., data=trainData, method="rf", trControl=controlRf, ntree=250)
+modelRf
+
+predictRf <- predict(modelRf, testData)
+confusionMatrix(testData$classe, predictRf)
+
+accuracy <- postResample(predictRf, testData$classe)
+accuracy
+
+oose <- 1 - as.numeric(confusionMatrix(testData$classe, predictRf)$overall[1])
+oose
+
+```
+So, the estimated accuracy of the model is 99.35% and the estimated out-of-sample error is 0.65%.
+
+## Using Using ML algorithms for prediction of Test Data Set (Randon Forest)
+```{r}
+result <- predict(modelRf, testCleaned[, -length(names(testCleaned))])
+result
+
+```
+
+## Using Using ML algorithms for prediction of Test Data Set (RandomTree)
+```{r}
+treeModel <- rpart(classe ~ ., data=trainData, method="class")
+prp(treeModel) 
+```
+
